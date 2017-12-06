@@ -54,8 +54,16 @@ namespace OpenMined.Network.Controllers
 
 		public int addTensor (FloatTensor tensor)
 		{
+			tensor.ctrl = this;
 			tensors.Add (tensor.Id, tensor);
-			return (tensors.Count);
+			return (tensor.Id);
+		}
+
+		public FloatTensor createZeroTensorLike(FloatTensor tensor) {
+			FloatTensor new_tensor = tensor.Copy ();
+			new_tensor.Zero_ ();
+			addTensor (new_tensor);
+			return new_tensor;
 		}
 
 		public string processMessage (string json_message)

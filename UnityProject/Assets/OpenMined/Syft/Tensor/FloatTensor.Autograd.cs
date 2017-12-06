@@ -11,12 +11,34 @@ namespace OpenMined.Syft.Tensor
 
 		private Dictionary<int, FloatTensor> creators;
 		private string creation_op;
-		private Dictionary<int, FloatTensor> children;
+		private Dictionary<int, int> children;
 
 		private FloatTensor grad;
 
+	
+
+		public void InitAutograd() {
+			if(!autograd) {
+				autograd=true;
+				creators = new Dictionary<int, FloatTensor> ();
+				children = new Dictionary<int, int> ();
+			}
+
+		}
+
+		public void Backward(FloatTensor grad = null, FloatTensor grad_origin=null) {
+
+			if (autograd) {
+				if (grad == null) {
+
+				}
 
 
+			}
+
+
+
+		}
 
 	}
 }

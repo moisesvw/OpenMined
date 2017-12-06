@@ -12,6 +12,8 @@ public partial class FloatTensor
 // Should we put a check incase this variable overflows?
 private static volatile int nCreated = 0;
 
+public SyftController ctrl;
+
 private float[] data;
 private long[] strides;
 private int[] shape;
@@ -86,14 +88,18 @@ public long[] Strides {
 			bool _dataOnGpu=false,
 			bool _autograd=false,
 			bool _keepgrads=false,
-			Dictionary<int,FloatTensor> _creators = null,
-			string _creation_op=null)
+			string _creation_op=null,
+			SyftController _ctrl = null)
 {
+			ctrl = _ctrl;
 
 			autograd = _autograd;
 			keepgrads = _keepgrads;
 			creation_op = _creation_op; 
-			creators = _creators;
+
+			if (autograd) {
+				InitAutograd ();
+			}
 
 			// First: check that shape is valid.
 			if (_shape == null || _shape.Length == 0) {
@@ -435,6 +441,73 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		this.Floor(inline: true);
 		return this.id + "";
 	}
+	case "get":
+	{
+		var param_to_get = msgObj.tensorIndexParams[0];
+		switch(param_to_get) {
+
+			case "autograd":
+			{
+				if(this.autograd)
+					return "1";
+				return "0";
+			}
+			case "children":
+			{
+				if (children != null) {
+					string children_str = "";
+					foreach (KeyValuePair<int, int> entry in children) {
+						children_str += (entry.Key + ",");
+					}
+					return children_str;
+				} else {
+					return "";
+				}
+			}
+			case "creation_op":
+			{
+				if(creation_op != null)
+					return creation_op;
+				return "";
+			}
+			case "creators":
+			{
+				if (creators != null) {
+					string creators_str = "";
+					foreach (KeyValuePair<int, FloatTensor> entry in creators) {
+						creators_str += (entry.Key + ",");
+					}
+					return creators_str;
+				} else {
+					return "";
+				}
+			}
+			case "id":
+			{
+				return this.id + "";
+			}
+			case "keepgrads":
+			{
+				if(this.keepgrads)
+					return "1";
+				return "0";
+			}
+			case "size":
+			{
+				return this.size + "";
+			}
+			case "shape":
+			{
+				string shape_str = "";
+				for (int i=0; i<shape.Length; i++) {
+					shape_str += (shape [i] + ",");
+				}
+				return shape_str;
+			}
+
+		}
+		return "param not found or not configured with a getter";
+	}
 	case "gpu":
 	{
 		if (Gpu())
@@ -474,6 +547,23 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		this.Pow (float.Parse (msgObj.tensorIndexParams [0]), inline: true);
 		return this.id + "";
+	}
+	case "set":
+	{
+		var param_to_set = msgObj.tensorIndexParams[0];
+		switch(param_to_set) {
+			case "autograd":
+			{
+				if(msgObj.tensorIndexParams[1] == "1") {
+					InitAutograd ();
+					return "1";
+				} else {
+					autograd = false;
+					return "0";
+				}
+			}
+		}
+		return "setter not recognized";
 	}
 	case "sigmoid_":
 	{
