@@ -8,7 +8,9 @@ namespace OpenMined.Syft.Tensor
 	{
 
 		private FloatTensor emptyTensorCopy() {
-					return new FloatTensor(_shape:shape, _data:data, _dataBuffer:dataBuffer, _shader:this.shader);
+			FloatTensor result = new FloatTensor(_shape:shape, _data:data, _dataBuffer:dataBuffer, _shader:this.shader);
+			ctrl.addTensor (result);
+			return result;
 		}
 
 		public FloatTensor Abs(bool inline = false)
@@ -394,8 +396,14 @@ namespace OpenMined.Syft.Tensor
 
 			if (dataOnGpu) {
 				result.Gpu ();
-				if (inline) { MulElemGPU_(x); return this;}
-				else { return MulElemGPU(x, result);}
+				if (inline) { 
+					if (autograd) {
+						throw new InvalidOperationException ("Cannot call inline functions if you intend to run backprop.");
+					}
+					MulElemGPU_(x); 
+					return this;
+				}
+				else { result = MulElemGPU(x, result);}
 			}
 
 			var nCpu = SystemInfo.processorCount;
@@ -404,6 +412,18 @@ namespace OpenMined.Syft.Tensor
 						for (var i = size * workerId / nCpu; i < max; i++)
 							result.Data [i] = x.Data [i] * this.Data [i];
 					});
+
+			if (autograd) {
+
+				result.InitAutograd ();
+				result.creators.Add (this);
+				result.creators.Add (x);
+				result.creation_op = "mul";
+
+				children.Add (result.Id, 0);
+				x.children.Add (result.Id, 0);
+
+			}
 
 			return result;
 		}

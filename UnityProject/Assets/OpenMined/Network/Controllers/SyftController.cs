@@ -69,7 +69,7 @@ namespace OpenMined.Network.Controllers
 		public FloatTensor createOnesTensorLike(FloatTensor tensor) {
 			FloatTensor new_tensor = tensor.Copy ();
 			new_tensor.Zero_ ();
-			new_tensor.Add ((float)1);
+			new_tensor.Add ((float)1,true);
 			addTensor (new_tensor);
 			return new_tensor;
 		}

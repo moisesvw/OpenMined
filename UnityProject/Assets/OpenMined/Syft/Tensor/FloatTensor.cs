@@ -492,6 +492,12 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 					return "";
 				}
 			}
+			case "grad":
+			{
+				if (grad == null)
+					return "";
+				return grad.id + "";
+			}
 			case "id":
 			{
 				return this.id + "";
@@ -534,7 +540,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		var tensor_1 = ctrl.getTensor(int.Parse(msgObj.tensorIndexParams[0]));
 		var result = this.Mul(tensor_1);
 
-		return ctrl.addTensor(result) + "";
+		return result.id + "";
 	}
 	case "mul_elem_":
 	{
