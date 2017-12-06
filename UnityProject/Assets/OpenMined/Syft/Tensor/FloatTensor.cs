@@ -3,6 +3,7 @@ using System.Runtime.Remoting.Messaging;
 using UnityEngine;
 using OpenMined.Network.Utils;
 using OpenMined.Network.Controllers;
+using System.Collections.Generic;
 
 namespace OpenMined.Syft.Tensor
 {
@@ -76,8 +77,24 @@ public long[] Strides {
 	get { return strides; }
 }
 
-		public FloatTensor (int[] _shape, float[] _data = null, ComputeBuffer _dataBuffer = null, ComputeBuffer _shapeBuffer = null, ComputeShader _shader = null, bool _copyData = true, bool _dataOnGpu=false)
+		public FloatTensor (int[] _shape, 
+			float[] _data = null, 
+			ComputeBuffer _dataBuffer = null, 
+			ComputeBuffer _shapeBuffer = null, 
+			ComputeShader _shader = null, 
+			bool _copyData = true, 
+			bool _dataOnGpu=false,
+			bool _autograd=false,
+			bool _keepgrads=false,
+			Dictionary<int,FloatTensor> _creators = null,
+			string _creation_op=null)
 {
+
+			autograd = _autograd;
+			keepgrads = _keepgrads;
+			creation_op = _creation_op; 
+			creators = _creators;
+
 			// First: check that shape is valid.
 			if (_shape == null || _shape.Length == 0) {
 				throw new InvalidOperationException ("Tensor shape can't be an empty array.");
