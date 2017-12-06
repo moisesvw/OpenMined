@@ -557,7 +557,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "pow_scalar":
 	{
 		FloatTensor result = Pow (float.Parse (msgObj.tensorIndexParams [0]));
-		return ctrl.addTensor (result) + "";
+		return result.id + "";
 	}
 	case "pow_scalar_":
 	{
