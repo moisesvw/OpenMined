@@ -76,6 +76,92 @@ public long[] Strides {
 	get { return strides; }
 }
 
+		public FloatTensor (int[] _shape, float[] _data = null, ComputeBuffer _dataBuffer = null, ComputeBuffer _shapebuffer = null, ComputeShader _shader = null, bool _copyData = false)
+{
+			// First: check that shape is valid.
+			if (_shape == null || _shape.Length == 0) {
+				throw new InvalidOperationException ("Tensor shape can't be an empty array.");
+			}	
+
+			// Second: since shape is valid, let's save it
+			shape = (int[])_shape.Clone ();
+
+			// Third: let's see what kind of data we've got. We should either have
+			// a GPU ComputeBuffer or a data[] object. 
+			if (_data != null && _shapebuffer == null && _dataBuffer == null) {
+				
+				// looks like we have CPU data being passed in... initialize a CPU tensor.
+				dataOnGpu = false;
+
+				if (_copyData) {
+					data = (float[])_data.Clone ();
+				} else {
+					data = _data;
+				}
+
+				// Second: let's initialize our CPU strides.
+				strides = new long[_shape.Length];
+
+				// Third: let's set the tensor's size to be equal to that of the array
+				size = _data.Length;
+
+				// Fourth: we should check that the data size matches our shape.
+				long acc = 1;
+				for (var i = _shape.Length - 1; i >= 0; --i) {
+					strides [i] = acc;
+					acc *= _shape [i];
+				}
+
+				if (acc != size)
+					throw new FormatException ("Tensor shape and data do not match.");
+				
+
+			} else if (_dataBuffer != null && _shapebuffer != null && _data == null) {
+				
+				// looks like we have GPU data being passed in... initialize a GPU tensor.
+
+
+				// First: we need to check that we have a shader
+				if (SystemInfo.supportsComputeShaders && _shader != null) {
+					shader = _shader;
+					initShaderKernels ();
+				} else {
+					throw new FormatException ("You tried to initialize a GPU tensor without access to a shader or gpu.");
+				}
+
+				// Second: let's save our buffer.
+				dataBuffer = _dataBuffer;
+				shapeBuffer = _shapebuffer;
+
+				if (_copyData) {
+					// TODO:
+					throw new FormatException ("Cannot copy data buffers yet");
+				}
+
+				// Third: let's initialize our strides.
+				strides = new long[_shape.Length];
+
+				// Fourth: let's set the tensor's size to be equal to that of the buffer
+				size = _dataBuffer.count;
+
+				// Fifth: we should check that the buffer's size matches our shape.
+				long acc = 1;
+				for (var i = _shape.Length - 1; i >= 0; --i) {
+					strides [i] = acc;
+					acc *= _shape [i];
+				}
+
+				// Sixth: let's check to see that our shape and data sizes match.
+				if (acc != size)
+					throw new FormatException ("Tensor shape and data do not match.");
+
+			}
+
+			// Lastly: let's set the ID of the tensor.
+			// IDEs might show a warning, but ref and volatile seems to be working with Interlocked API.
+			id = System.Threading.Interlocked.Increment (ref nCreated);
+
+}
 
 public FloatTensor (int[] _shape, ComputeShader _shader, bool _initOnGpu = false)
 {
