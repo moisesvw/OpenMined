@@ -65,8 +65,8 @@ namespace OpenMined.Syft.Tensor
 			if (autograd) {
 
 				result.InitAutograd ();
-				result.creators.Add (this.Id, this);
-				result.creators.Add (x.Id, x);
+				result.creators.Add (this);
+				result.creators.Add (x);
 				result.creation_op = "add";
 
 				children.Add (result.Id, 0);

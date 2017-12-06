@@ -59,9 +59,17 @@ namespace OpenMined.Network.Controllers
 			return (tensor.Id);
 		}
 
-		public FloatTensor createZeroTensorLike(FloatTensor tensor) {
+		public FloatTensor createZerosTensorLike(FloatTensor tensor) {
 			FloatTensor new_tensor = tensor.Copy ();
 			new_tensor.Zero_ ();
+			addTensor (new_tensor);
+			return new_tensor;
+		}
+
+		public FloatTensor createOnesTensorLike(FloatTensor tensor) {
+			FloatTensor new_tensor = tensor.Copy ();
+			new_tensor.Zero_ ();
+			new_tensor.Add ((float)1);
 			addTensor (new_tensor);
 			return new_tensor;
 		}

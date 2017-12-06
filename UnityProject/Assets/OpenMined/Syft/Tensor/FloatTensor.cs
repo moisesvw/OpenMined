@@ -348,6 +348,16 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		AddMatrixVectorProduct (tensor_1, tensor_2);
 		return msgObj.functionCall + ": OK";
 	}
+	case "backward":
+	{
+		if (msgObj.tensorIndexParams.Length > 0) {
+			var grad = ctrl.getTensor (int.Parse (msgObj.tensorIndexParams [0]));
+			Backward (grad);
+		} else {
+			Backward ();
+		}
+		return "";
+	}
 	case "ceil":
 	{
 		var result = this.Ceil();
@@ -474,8 +484,8 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 			{
 				if (creators != null) {
 					string creators_str = "";
-					foreach (KeyValuePair<int, FloatTensor> entry in creators) {
-						creators_str += (entry.Key + ",");
+					foreach (FloatTensor entry in creators) {
+						creators_str += (entry.id + ",");
 					}
 					return creators_str;
 				} else {
