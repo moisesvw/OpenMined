@@ -18,12 +18,11 @@ namespace OpenMined.Syft.Tensor
 	
 
 		public void InitAutograd() {
-			if(!autograd) {
+//			if(!autograd) {
 				autograd=true;
 				creators = new List<FloatTensor> ();
 				children = new Dictionary<int, int> ();
-			}
-
+//			}
 		}
 
 		public bool AllChildrenGradsAccountedFor() {
@@ -41,6 +40,7 @@ namespace OpenMined.Syft.Tensor
 			if (autograd) {
 				if (grad == null) {
 					grad = this.ctrl.createOnesTensorLike (this);
+					grad.Autograd = false;
 				}
 
 				if (grad_origin != null) {

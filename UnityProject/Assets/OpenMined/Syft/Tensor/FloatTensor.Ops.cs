@@ -19,7 +19,7 @@ namespace OpenMined.Syft.Tensor
 
 			if (dataOnGpu) {
 				if (inline) { AbsGPU_ (); return this; }
-				else { AbsGPU (result); }
+				else { return AbsGPU (result); }
 			}
 			else {
 				var nCpu = SystemInfo.processorCount;
@@ -40,7 +40,7 @@ namespace OpenMined.Syft.Tensor
 
 			FloatTensor result = inline ? this : this.emptyTensorCopy();
 			if (dataOnGpu & x.dataOnGpu) {
-s
+
 				if (inline) { 
 					if (autograd)
 						throw new InvalidOperationException ("Cannot call inline functions if you intend to run backprop.");
@@ -398,18 +398,20 @@ s
 					if (autograd) {
 						throw new InvalidOperationException ("Cannot call inline functions if you intend to run backprop.");
 					}
-					MulElemGPU_(x); 
+					MulElemGPU_ (x); 
 					return this;
+				} else {
+					result = MulElemGPU (x, result);
 				}
-				else { result = MulElemGPU(x, result);}
-			}
+			} else {
 
-			var nCpu = SystemInfo.processorCount;
-			Parallel.For (0, nCpu, workerId => {
-						var max = size * (workerId + 1) / nCpu;
-						for (var i = size * workerId / nCpu; i < max; i++)
-							result.Data [i] = x.Data [i] * this.Data [i];
-					});
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For (0, nCpu, workerId => {
+					var max = size * (workerId + 1) / nCpu;
+					for (var i = size * workerId / nCpu; i < max; i++)
+						result.Data [i] = x.Data [i] * this.Data [i];
+				});
+			}
 
 			if (autograd) {
 

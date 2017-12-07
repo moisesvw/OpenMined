@@ -71,6 +71,12 @@ public int Id {
 	set { id = value; }
 }
 
+public bool Autograd {
+	get { return autograd; }
+
+	set { autograd = value; }
+}
+
 public static int CreatedObjectCount {
 	get { return nCreated; }
 }
@@ -78,9 +84,10 @@ public static int CreatedObjectCount {
 public long[] Strides {
 	get { return strides; }
 }
-
+		// parameters are overrides
 		public FloatTensor Copy ()
 		{
+			
 			FloatTensor copy = new FloatTensor (ctrl,
 				                   _shape: this.shape, 
 				                   _data: data, 
@@ -509,6 +516,13 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 				} else {
 					return "";
 				}
+			}
+			case "dataOnGpu":
+			{
+				if (dataOnGpu) {
+					return "1";
+				}
+				return "0";
 			}
 			case "grad":
 			{
