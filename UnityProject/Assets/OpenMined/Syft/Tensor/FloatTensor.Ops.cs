@@ -10,7 +10,7 @@ namespace OpenMined.Syft.Tensor
 
 		private FloatTensor emptyTensorCopy() {
 //			FloatTensor result = new FloatTensor(ctrl, _shape:shape, _data:data, _dataBuffer:dataBuffer, _shader:this.shader);
-			return this.Copy();
+			return new FloatTensor(ctrl, _shape:shape, _dataOnGpu:dataOnGpu, _shader:shader);
 		}
 
 		public FloatTensor Abs(bool inline = false)
