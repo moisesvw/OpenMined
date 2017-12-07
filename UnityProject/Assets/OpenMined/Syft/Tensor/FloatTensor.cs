@@ -630,6 +630,12 @@ namespace OpenMined.Syft.Tensor
                     this.Mul(tensor_1, inline: true);
                     return this.id + "";
                 }
+				case "mm":
+				{
+					var tensor_1 = ctrl.getTensor (int.Parse (msgObj.tensorIndexParams [0]));
+					var result = this.MM (tensor_1);
+					return result.id + "";
+				}
                 case "pow_elem_":
                 {
                     var tensor_1 = ctrl.getTensor(int.Parse(msgObj.tensorIndexParams[0]));
