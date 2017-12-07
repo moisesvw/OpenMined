@@ -55,6 +55,7 @@ namespace OpenMined.Network.Controllers
 		public int addTensor (FloatTensor tensor)
 		{
 			tensor.ctrl = this;
+			tensor.Id = tensors.Count;
 			tensors.Add (tensor.Id, tensor);
 			return (tensor.Id);
 		}
@@ -62,7 +63,6 @@ namespace OpenMined.Network.Controllers
 		public FloatTensor createZerosTensorLike(FloatTensor tensor) {
 			FloatTensor new_tensor = tensor.Copy ();
 			new_tensor.Zero_ ();
-			addTensor (new_tensor);
 			return new_tensor;
 		}
 
@@ -70,7 +70,6 @@ namespace OpenMined.Network.Controllers
 			FloatTensor new_tensor = tensor.Copy ();
 			new_tensor.Zero_ ();
 			new_tensor.Add ((float)1,true);
-			addTensor (new_tensor);
 			return new_tensor;
 		}
 
@@ -84,8 +83,7 @@ namespace OpenMined.Network.Controllers
 			case "tensor":
 				{
 					if (msgObj.objectIndex == 0 && msgObj.functionCall == "create") {
-						FloatTensor tensor = new FloatTensor (_shape:msgObj.shape, _data:msgObj.data, _shader:this.Shader);
-						this.addTensor (tensor);
+						FloatTensor tensor = new FloatTensor (this,_shape:msgObj.shape, _data:msgObj.data, _shader:this.Shader);
 						Debug.LogFormat ("<color=magenta>createTensor:</color> {0}", string.Join (", ", tensor.Data));
 						return tensor.Id.ToString ();
 					} else if (msgObj.objectIndex > tensors.Count) {

@@ -79,7 +79,24 @@ public long[] Strides {
 	get { return strides; }
 }
 
-		public FloatTensor (int[] _shape, 
+		public FloatTensor Copy ()
+		{
+			FloatTensor copy = new FloatTensor (ctrl,
+				                   _shape: this.shape, 
+				                   _data: data, 
+				                   _dataBuffer: dataBuffer,
+				                   _shapeBuffer: shapeBuffer,
+				                   _shader: shader,
+				                   _copyData: true,
+				                   _dataOnGpu: dataOnGpu,
+				                   _autograd: autograd,
+				                   _keepgrads: keepgrads,
+				                   _creation_op: creation_op);
+			return copy;
+		}
+
+		public FloatTensor (SyftController _ctrl,
+			int[] _shape, 
 			float[] _data = null, 
 			ComputeBuffer _dataBuffer = null, 
 			ComputeBuffer _shapeBuffer = null, 
@@ -88,11 +105,11 @@ public long[] Strides {
 			bool _dataOnGpu=false,
 			bool _autograd=false,
 			bool _keepgrads=false,
-			string _creation_op=null,
-			SyftController _ctrl = null)
+			string _creation_op=null)
 {
 			ctrl = _ctrl;
 
+			dataOnGpu = _dataOnGpu;
 			autograd = _autograd;
 			keepgrads = _keepgrads;
 			creation_op = _creation_op; 
@@ -108,6 +125,8 @@ public long[] Strides {
 
 			// Second: since shape is valid, let's save it
 			shape = (int[])_shape.Clone ();
+
+			setStridesAndCheckShape();
 
 			// Third: let's see what kind of data we've got. We should either have
 			// a GPU ComputeBuffer or a data[] object. 
@@ -174,10 +193,15 @@ public long[] Strides {
 
 			}
 
-			// Lastly: let's set the ID of the tensor.
-			// IDEs might show a warning, but ref and volatile seems to be working with Interlocked API.
-			id = System.Threading.Interlocked.Increment (ref nCreated);
-
+			ctrl.addTensor (this);
+			if (shader == null) {
+				shader = ctrl.GetShader ();
+			}
+//
+//			// Lastly: let's set the ID of the tensor.
+//			// IDEs might show a warning, but ref and volatile seems to be working with Interlocked API.
+//			id = System.Threading.Interlocked.Increment (ref nCreated);
+//
 }
 
 		public void InitCpu(float[] _data, bool _copyData)  
@@ -190,10 +214,6 @@ public long[] Strides {
 			} else {
 				data = _data;
 			}
-				
-			size = _data.Length;
-
-			setStridesAndCheckShape();
 
 		}
 
@@ -207,20 +227,29 @@ public long[] Strides {
 				throw new FormatException ("You tried to initialize a GPU tensor without access to a shader or gpu.");
 			}
 
-			// Second: let's save our buffer.
-			dataBuffer = _dataBuffer;
-			shapeBuffer = _shapeBuffer;
+//			// Second: let's save our buffer.
+//			dataBuffer = _dataBuffer;
+//			shapeBuffer = _shapeBuffer;
 
 			if (_copyData) {
-				// TODO:
-				throw new FormatException ("Cannot copy data buffers yet");
+				float[] temp_data = new float[_dataBuffer.count];
+				int[] temp_shape = new int[shape.Length];
+
+				_dataBuffer.GetData (temp_data);
+				_shapeBuffer.GetData (temp_shape);
+
+				dataBuffer = new ComputeBuffer (_dataBuffer.count, sizeof(float));
+				shapeBuffer = new ComputeBuffer (_shapeBuffer.count, sizeof(int));
+
+				dataBuffer.SetData (temp_data);
+				shapeBuffer.SetData (temp_shape);
+
 			}
 
 			// Third: let's set the tensor's size to be equal to that of the buffer
 			size = _dataBuffer.count;
 
-			// Fourth:
-			setStridesAndCheckShape();
+
 
 		}
 
@@ -229,23 +258,18 @@ public long[] Strides {
 			strides = new long[shape.Length];
 
 			// Fifth: we should check that the buffer's size matches our shape.
-			long acc = 1;
+			int acc = 1;
 			for (var i = shape.Length - 1; i >= 0; --i) {
 				strides [i] = acc;
 				acc *= shape [i];
 			}
 
 			// Sixth: let's check to see that our shape and data sizes match.
-			if (acc != size)
-				throw new FormatException ("Tensor shape and data do not match.");
+			size = acc;
 		}
 
 
-public FloatTensor Copy ()
-{
-	FloatTensor copy = new FloatTensor (_data:this.data, _shape:this.shape, _shader:this.shader);
-	return copy;
-}
+
 
 public float this [params long[] indices] {
 	get { return this [GetIndex (indices)]; }
@@ -266,7 +290,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		// calls the function on our tensor object
 		var result = this.Abs ();
 		// returns the function call name with the OK status
-		return ctrl.addTensor (result) + "";
+		return result.id + "";
 	}
 	case "abs_":
 	{
@@ -280,12 +304,11 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		Debug.LogFormat("add_elem");
 		var tensor_1 = ctrl.getTensor(int.Parse(msgObj.tensorIndexParams[0]));
 		var result = this.Add(tensor_1);
-		return ctrl.addTensor(result) + "";
+		return result.id + "";
 	}
 	case "acos":
 	{
 		var result = Acos ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "acos_":
@@ -296,7 +319,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "asin":
 	{
 		var result = Asin ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "asin_":
@@ -307,7 +329,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "atan":
 	{
 		var result = Atan ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "atan_":
@@ -326,7 +347,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		Debug.LogFormat("add_scalar");
 		FloatTensor result = Add(float.Parse(msgObj.tensorIndexParams[0]));
-		return ctrl.addTensor (result) + "";
+		return result.Id + "";
 	}
 	case "add_scalar_":
 	{
@@ -361,7 +382,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "ceil":
 	{
 		var result = this.Ceil();
-		return ctrl.addTensor(result) + "";
+		return result.id + "";
 	}
 	case "ceil_":
 	{
@@ -371,13 +392,11 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "copy":
 	{
 		var result = Copy ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "cos":
 	{
 		var result = Cos ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "cos_":
@@ -388,7 +407,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "cosh":
 	{
 		var result = Cosh ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "Cosh_":
@@ -405,7 +423,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		var tensor_1 = ctrl.getTensor(int.Parse(msgObj.tensorIndexParams[0]));
 		var result = this.Div(tensor_1);
-		return ctrl.addTensor(result) + "";
+		return result.Id + "";
 	}
 	case "div_elem_":
 	{
@@ -417,7 +435,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		FloatTensor result = Div (float.Parse (msgObj.tensorIndexParams [0]));
 
-		return ctrl.addTensor (result) + "";
+		return result.Id + "";
 	}
 	case "div_scalar_":
 	{
@@ -428,7 +446,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		FloatTensor result = Mul (float.Parse (msgObj.tensorIndexParams [0]));
 
-		return ctrl.addTensor (result) + "";
+		return result.id + "";
 	}
 	case "mul_scalar_":
 	{
@@ -439,12 +457,12 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		var tensor_1 = ctrl.getTensor (int.Parse (msgObj.tensorIndexParams [0]));
 		var result = this.Pow (tensor_1);
-		return ctrl.addTensor (result) + "";
+		return result.id + "";
 	}
 	case "floor":
 	{
 		var result = this.Floor();
-		return ctrl.addTensor(result) + "";
+		return result.id + "";
 	}
 	case "floor_":
 	{
@@ -589,7 +607,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "sigmoid":
 	{
 		var result = this.Sigmoid();
-		return ctrl.addTensor(result) + "";
+		return result.id + "";
 	}
 	case "sub_elem":
 	{
@@ -597,7 +615,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		var tensor_1 = ctrl.getTensor(int.Parse(msgObj.tensorIndexParams[0]));
 		var result = this.Sub(tensor_1);
 
-		return ctrl.addTensor(result) + "";
+		return result.Id + "";
 	}
 	case "sub_elem_":
 	{
@@ -609,13 +627,11 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "neg":
 	{
 		var result = Neg ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "rsqrt":
 	{
 		var result = Rsqrt();
-		ctrl.addTensor(result);
 		return result.Id.ToString();
 	}
 	case "print":
@@ -637,7 +653,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		Debug.LogFormat ("sign");
 		var result = this.Sign ();
-		return ctrl.addTensor (result) + "";
+		return result.Id + "";
 	}
 	case "sign_":
 	{
@@ -648,7 +664,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "sin":
 	{
 		var result = Sin ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "sin_":
@@ -658,14 +673,12 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	}
 	case "sqrt":
 	{
-		var result = Sqrt ();
-		ctrl.addTensor (result);
+		var result = Sqrt ();		
 		return result.id.ToString ();
 	}
 	case "size":
 	{
 		var result = SizeTensor ();
-		ctrl.addTensor (result);
 		return result.id.ToString ();
 	}
 
@@ -674,7 +687,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		Debug.LogFormat ("sub_scalar");
 		FloatTensor result = Sub (float.Parse (msgObj.tensorIndexParams [0]));
 
-		return ctrl.addTensor (result) + "";
+		return result.Id + "";
 	}
 	case "sub_scalar_":
 	{
@@ -686,7 +699,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		Debug.LogFormat ("sum_dim");
 		FloatTensor result = this.Sum (int.Parse (msgObj.tensorIndexParams [0]));
-		return ctrl.addTensor (result) + "";
+		return result.Id + "";
 	}
 	case "to_numpy":
 	{
@@ -695,7 +708,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "tan":
 	{
 		var result = Tan ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "tan_":
@@ -706,13 +718,11 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "tanh":
 	{
 		var result = Tanh ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "sinh":
 	{
 		var result = Sinh ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "sinh_":
@@ -723,7 +733,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "transpose":
 	{
 		var result = Transpose ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 
@@ -732,7 +741,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		var K = int.Parse (msgObj.tensorIndexParams [0]);
 		var result = Copy ();
 		result.Triu_ (K);
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 	case "triu_":
@@ -745,7 +753,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "trunc":
 	{
 		var result = Trunc ();
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 
@@ -757,7 +764,6 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 			new_dims [i] = int.Parse (msgObj.tensorIndexParams [i]);
 		}
 		var result = View (new_dims);
-		ctrl.addTensor (result);
 		return result.Id.ToString ();
 	}
 
