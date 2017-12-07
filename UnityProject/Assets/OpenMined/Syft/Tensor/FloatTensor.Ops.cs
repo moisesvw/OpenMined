@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace OpenMined.Syft.Tensor
 {
@@ -76,6 +77,7 @@ namespace OpenMined.Syft.Tensor
 
 			return result;
 		}
+
 
 		public FloatTensor Acos (bool inline = false)
 		{
@@ -280,6 +282,7 @@ namespace OpenMined.Syft.Tensor
 			// Check if both tensors are compatible for sum
 			SameSizeDimensionsShapeAndLocation (ref x);
 
+
 			FloatTensor result = inline ? this : this.emptyTensorCopy();
 
 			if (dataOnGpu & x.dataOnGpu) {
@@ -334,7 +337,6 @@ namespace OpenMined.Syft.Tensor
 
 			return this;
 		}
-
 
 		public FloatTensor Div(float value, bool inline = false)
 		{
@@ -544,7 +546,6 @@ namespace OpenMined.Syft.Tensor
 					});
 			return result;
 		}
-
 
 		public FloatTensor Sign (bool inline = false)
 		{
@@ -889,6 +890,7 @@ namespace OpenMined.Syft.Tensor
 		{
 			if (dataOnGpu)
 			{
+
 				ZeroGPU_(); return;
 			}
 
@@ -901,4 +903,5 @@ namespace OpenMined.Syft.Tensor
 					});
 		}
 	}
+
 }

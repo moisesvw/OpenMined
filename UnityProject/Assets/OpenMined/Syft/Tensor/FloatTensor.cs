@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Remoting.Messaging;
+using NUnit.Framework.Constraints;
 using UnityEngine;
 using OpenMined.Network.Utils;
 using OpenMined.Network.Controllers;
@@ -234,9 +235,6 @@ public long[] Strides {
 				throw new FormatException ("You tried to initialize a GPU tensor without access to a shader or gpu.");
 			}
 
-//			// Second: let's save our buffer.
-//			dataBuffer = _dataBuffer;
-//			shapeBuffer = _shapeBuffer;
 
 			if (_copyData) {
 				float[] temp_data = new float[_dataBuffer.count];
@@ -251,12 +249,11 @@ public long[] Strides {
 				dataBuffer.SetData (temp_data);
 				shapeBuffer.SetData (temp_shape);
 
+
 			}
 
 			// Third: let's set the tensor's size to be equal to that of the buffer
 			size = _dataBuffer.count;
-
-
 
 		}
 
@@ -558,7 +555,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	}
 	case "gpu":
 	{
-		if (Gpu())
+		if (Gpu(ctrl.GetShader()))
 		{
 			return msgObj.functionCall + ": OK : Moved data to GPU.";
 		}
@@ -659,7 +656,7 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 		Debug.LogFormat ("<color=cyan>Print:</color> {0}", string.Join (",", this.Data));
 
 		if (dataOriginallyOnGpu) {
-			Gpu ();
+			Gpu (ctrl.GetShader());
 		}
 		return data;
 	}
@@ -800,6 +797,37 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	{
 		return Convert.ToString (IsContiguous ());
 	}
+	case "squeeze":
+	{
+		if (msgObj.tensorIndexParams.Length > 0)
+		{
+			int dim = int.Parse(msgObj.tensorIndexParams[0]);
+			var result = Squeeze(dim: dim);
+			ctrl.addTensor(result);
+			return result.Id.ToString();
+		}
+		else
+		{
+			var result = Squeeze();
+			ctrl.addTensor(result);
+			return result.Id.ToString();
+		}
+
+	}
+	case "sqeeze_":
+	{
+		if (msgObj.tensorIndexParams.Length > 0)
+		{
+			int dim = int.Parse(msgObj.tensorIndexParams[0]);
+			Squeeze(dim: dim, inline: true);
+			return Id.ToString();
+		}
+		else
+		{
+			Squeeze(inline: true);
+			return Id.ToString();
+		}
+	}
 	default:
 		break;
 	}
@@ -809,6 +837,8 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 public string Print ()
 {
 	bool dataOriginallyOnGpu = dataOnGpu;
+	ComputeShader _shader = this.shader;
+
 	if (dataOnGpu) {
 		Cpu ();
 	}
@@ -837,7 +867,7 @@ public string Print ()
 	}
 
 	if (dataOriginallyOnGpu) {
-		Gpu ();
+		Gpu (_shader);
 	}
 	return print;
 }
