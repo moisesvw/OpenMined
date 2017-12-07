@@ -68,7 +68,7 @@ namespace OpenMined.Syft.Tensor
 				result.InitAutograd ();
 				result.creators.Add (this);
 				result.creators.Add (x);
-				result.creation_op = "add";
+				result.creation_op = "add_elem";
 
 				children.Add (result.Id, 0);
 				x.children.Add (result.Id, 0);
@@ -420,7 +420,7 @@ namespace OpenMined.Syft.Tensor
 				result.InitAutograd ();
 				result.creators.Add (this);
 				result.creators.Add (x);
-				result.creation_op = "mul";
+				result.creation_op = "mul_elem";
 
 				children.Add (result.Id, 0);
 				x.children.Add (result.Id, 0);

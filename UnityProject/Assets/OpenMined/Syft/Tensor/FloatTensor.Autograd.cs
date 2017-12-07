@@ -66,12 +66,20 @@ namespace OpenMined.Syft.Tensor
 				// only continue backpropping if all gradients (from children) are accounted for
 				// override waiting for children if "backprop" was called on this variable directly
 				if(this.creators != null && this.creators.Count > 0 && (grad_origin == null || AllChildrenGradsAccountedFor())) {
-					if (creation_op == "add") {
+					if (creation_op == "add_elem") {
+
 						creators [0].Backward (grad, this);
 						creators [1].Backward (grad, this);
-					} else if (creation_op == "mul") {
-						creators [0].Backward (grad.Mul(creators[1]), this);
-						creators [1].Backward (grad.Mul(creators[0]), this);
+
+					} else if (creation_op == "mul_elem") {
+						creators [0].Backward (grad.Mul (creators [1]), this);
+						creators [1].Backward (grad.Mul (creators [0]), this);
+					} else if (creation_op == "div_elem") {
+						creators [0].Backward (grad.Div (creators [1]), this);
+						creators [1].Backward (grad.Div (creators [0]), this);
+					} else if (creation_op == "sub_elem") {
+						creators [0].Backward (grad, this);
+						creators [1].Backward (grad.Neg(), this);
 					}
 
 //					if (!keepgrads) {
