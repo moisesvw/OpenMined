@@ -35,6 +35,22 @@ namespace OpenMined.Syft.Tensor
 			return true;
 		}
 
+		public void HookAutograd(ref FloatTensor result, ref FloatTensor x, string creation_op) {
+		
+			if (autograd) {
+
+				result.InitAutograd ();
+				result.creators.Add (this);
+				result.creators.Add (x);
+				result.creation_op = creation_op;
+
+				children.Add (result.Id, 0);
+				x.children.Add (result.Id, 0);
+
+			}
+		
+		}
+
 		public void Backward(FloatTensor grad = null, FloatTensor grad_origin=null) {
 
 			if (autograd) {
