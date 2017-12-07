@@ -281,8 +281,13 @@ namespace OpenMined.Syft.Tensor
 
 			if (dataOnGpu & x.dataOnGpu) {
 				result.Gpu (shader);
-				if (inline) { DivElemGPU_ (x); return this; }
-				else { return DivElemGPU (x, result); }
+				if (inline) { 
+					if(autograd) 
+						throw new InvalidOperationException ("Cannot call inline functions if you intend to run backprop.");
+					DivElemGPU_ (x); 
+					return this; 
+				}
+				else { result = DivElemGPU (x, result); }
 			}
 			else {
 				var nCpu = SystemInfo.processorCount;
@@ -294,6 +299,10 @@ namespace OpenMined.Syft.Tensor
 							}
 						});
 			}
+
+			if(autograd)
+				HookAutograd (ref result, ref x, "div_elem");
+			
 			return result;
 		}
 
