@@ -548,24 +548,24 @@ namespace OpenMined.Syft.Tensor
                                 return "";
                             }
                         }
-						case "data":
-						{
-							string out_str = "";
+                        case "data":
+                        {
+                          string out_str = "";
 
-							if (dataOnGpu) {
-								int[] temp_data = new int[size];
-								dataBuffer.GetData (temp_data);
-								for (int i = 0; i < size; i++) {
-									out_str += temp_data [i] + ",";
-								}
-							} else {
-								for (int i = 0; i < size; i++) {
-									out_str += data [i] + ",";
-								}
-							}
+                          if (dataOnGpu) {
+                            int[] temp_data = new int[size];
+                            dataBuffer.GetData (temp_data);
+                            for (int i = 0; i < size; i++) {
+                              out_str += temp_data [i] + ",";
+                            }
+                          } else {
+                            for (int i = 0; i < size; i++) {
+                              out_str += data [i] + ",";
+                            }
+                          }
 
-							return out_str;
-						}
+                          return out_str;
+                        }
                         case "dataOnGpu":
                         {
                             if (dataOnGpu)
@@ -630,12 +630,12 @@ namespace OpenMined.Syft.Tensor
                     this.Mul(tensor_1, inline: true);
                     return this.id + "";
                 }
-				case "mm":
-				{
-					var tensor_1 = ctrl.getTensor (int.Parse (msgObj.tensorIndexParams [0]));
-					var result = this.MM (tensor_1);
-					return result.id + "";
-				}
+                case "mm":
+                {
+                  var tensor_1 = ctrl.getTensor (int.Parse (msgObj.tensorIndexParams [0]));
+                  var result = this.MM (tensor_1);
+                  return result.id + "";
+                }
                 case "pow_elem_":
                 {
                     var tensor_1 = ctrl.getTensor(int.Parse(msgObj.tensorIndexParams[0]));
@@ -928,7 +928,8 @@ namespace OpenMined.Syft.Tensor
                     for (int i = 0; i < d1; i++)
                     {
                         float f = data[i + j * d1 + k * d1 * d2];
-						print += f.ToString("0.0000") + ", ";
+						            print += f.ToString("0.0000") + ", ";
+
                     }
                     print += "\n";
                 }
